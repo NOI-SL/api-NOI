@@ -1,62 +1,108 @@
-var express = require('express');
-var router = express.Router();
-var http = require('http');
-var moodle_client = require("moodle-client");
+const os = require('os');
+const express = require('express');
+const multer = require('multer');
 
-// localhost:3000/api/v1/signup
-// {
-// 	"firstname":"Udesh",
-// 	"lastname":"euo",
-// 	"fullname":"utoeuuhto",
-// 	"dob": "29/01/2019",
-// 	"gender": "m",
-// 	"school": "Dharmaraja college kandy",
-// 	"email": "uu@uu.lk",
-// 	"addressline1": "34",
-// 	"addressline2": "34",
-// 	"contact": "0772843687",
-// 	"id_type": "nic",
-// 	"id": 94334
-// }
+const router = express.Router();
+const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 1024 * 1024 * 5 } });
 
-router.get('/', function (req, res, next) {
-  res.send("Hello");
-});
+const validators = require('../utils/validators');
+const moodleService = require('../services/moodle-service');
+const dataService = require('../services/data-service');
 
-router.post('/signup', function (req, res) {
-  console.log(req.body);
-  var data = req.body;
-  var userstocreate = [{
-    username: data.username,
-    createpassword: 1,
-    firstname: data.firstname,
-    lastname: data.lastname,
-    email: data.email
-  }];
-  moodleSignUp(userstocreate).then(info => {
-    res.send(info);
-  });
-});
+router.post('/signup', upload.single('file_document'), function (req, res) {
+  const inputs = {
+    firstName: req.body['first_name'],
+    lastName: req.body['last_name'],
+    fullName: req.body['full_name'],
+    dob: new Date(`${req.body['dob_year']}.${req.body['dob_month']}.${req.body['dob_day']}`),
+    gender: req.body['gender'],
+    schoolName: req.body['school_name'],
+    address: [
+      req.body['address_1'],
+      req.body['address_2'],
+    ],
+    email: req.body['email'],
+    contactNumber: req.body['contact_number'],
+    documentType: req.body['document_type'],
+    documentNumber: req.body['document_number'],
+    document: req.file,
+  };
 
-function moodleSignUp(user) {
-  moodle_client.init({
-    wwwroot: "http://35.200.248.101",
-    token: "4bf594439359bce8686deaef1cd95586"
-  }).then(function (client) {
-    return client.call({
-      wsfunction: "core_user_create_users",
-      method: "POST",
-      args: {users: user}
-    }).then(function (info) {
-      console.log("Done");
-      return info;
-    }).catch(err => {
-      console.log(err);
+  const inputErrors = [];
+
+  if (!validators.goodString(inputs.firstName)) inputErrors.push('Invalid First Name');
+  if (!validators.goodString(inputs.lastName)) inputErrors.push('Invalid Last Name');
+  if (!validators.goodString(inputs.fullName)) inputErrors.push('Invalid Full Name');
+
+  if (!inputs.dob) inputErrors.push('Invalid birthdate');
+  else {
+    const deadline = new Date('1999-07-01');
+    if (inputs.dob < deadline) inputErrors.push('Unfortunately, you are overage to take part in NOI competition');
+  }
+
+  if (!validators.goodString(inputs.gender)) inputErrors.push('Invalid gender');
+  if (!validators.goodString(inputs.schoolName)) inputErrors.push('Invalid school name');
+  if (!inputs.address.length || !validators.goodString(inputs.address[0])) inputErrors.push('Invalid address');
+  if (!validators.goodString(inputs.email)) inputErrors.push('Invalid email address');
+  if (!validators.goodString(inputs.contactNumber)) inputErrors.push('Invalid contact number');
+  if (!validators.goodString(inputs.documentType)) inputErrors.push('Invalid proof document type');
+  else {
+    if (inputs.documentType !== 'Letter' && !validators.goodString(documentNumber)) inputErrors.push('Invalid proof document no.');
+  }
+
+  if (!inputs.document) inputErrors.push('Invalid proof document');
+
+  if (inputErrors.length > 0) {
+    res.json({
+      statusCode: 400,
+      message: 'Invalid input data provided',
+      errors: inputErrors,
     });
-  }).catch(function (err) {
-    console.log("Unable to initialize the client: " + err);
-  });
+    return;
+  }
+  dataService.userMailExists(inputs.email)
+    .then((result) => {
+      if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
+      return moodleService.createMoodleUser(inputs.firstName, inputs.lastName, inputs.email);
+    })
+    .then(() => {
+       // TODO write the dataset into mysql or somewhere
+      return true;
+    })
+    .then(() => {
+      res.json({
+        statusCode: 200,
+        message: 'NOI Registration successful.',
+        errors: [],
+      });
+    })
+    .catch((error) => {
+      if (error.statusCode) { // managed error
+        res.json({
+          statusCode: error.statusCode,
+          message: error.message,
+          errors: [error.message],
+        });
+      } else {
+        res.json({
+          statusCode: 500,
+          message: 'Internal server error',
+          errors: ['Unexpected error occurred. Please try again.']
+        });
+      }
+    })
+});
 
-}
+// error handler for the routes here
+router.use(function (err, req, res, next) {
+  if (err) {
+    res.json({
+      statusCode: 500,
+      message: 'Internal Server Error',
+      errors: ['Unexpected error occurred. Please try again.']
+    });
+  }
+});
+
 
 module.exports = router;
