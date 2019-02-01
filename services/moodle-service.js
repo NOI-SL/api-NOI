@@ -42,4 +42,3 @@ const createMoodleUser = async function (firstName, lastName, email) {
 module.exports = {
   createMoodleUser,
 }
-
