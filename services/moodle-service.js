@@ -14,7 +14,6 @@ const createMoodleUser = async function (firstName, lastName, email) {
       email,
     };
 
-    console.log('Creating moodle user with parameters', userData);
     const requestParams = {
       method: 'POST',
       json: true,
@@ -34,7 +33,7 @@ const createMoodleUser = async function (firstName, lastName, email) {
       throw new Error(response.message);
     }
   } catch (error) {
-    console.log('Could not create user account on moodle', error);
+    console.log('Moodle account creation failed', error);
     throw new Error('Moodle user account creation failed');
   }
 }

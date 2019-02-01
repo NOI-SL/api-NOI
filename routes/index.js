@@ -9,7 +9,8 @@ const validators = require('../utils/validators');
 const moodleService = require('../services/moodle-service');
 const dataService = require('../services/data-service');
 
-router.post('/signup', upload.single('file_document'), function (req, res) {
+
+router.post('/signup', upload.single('file_document'), (req, res) => {
   const inputs = {
     firstName: req.body['first_name'],
     lastName: req.body['last_name'],
@@ -53,7 +54,7 @@ router.post('/signup', upload.single('file_document'), function (req, res) {
   if (!inputs.document) inputErrors.push('Invalid proof document');
 
   if (inputErrors.length > 0) {
-    res.json({
+    res.status(400).json({
       statusCode: 400,
       message: 'Invalid input data provided',
       errors: inputErrors,
@@ -63,28 +64,33 @@ router.post('/signup', upload.single('file_document'), function (req, res) {
   dataService.userMailExists(inputs.email)
     .then((result) => {
       if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
+    })
+    .then(() => {
+      console.log('Creating Moodle user');
       return moodleService.createMoodleUser(inputs.firstName, inputs.lastName, inputs.email);
     })
     .then(() => {
-       // TODO write the dataset into mysql or somewhere
-      return true;
+      console.log('Creating user record');
+      return dataService.createUserRecord(inputs);
     })
     .then(() => {
-      res.json({
+      console.log('NOI User registration successful', inputs);
+      res.status(200).json({
         statusCode: 200,
         message: 'NOI Registration successful.',
         errors: [],
       });
     })
     .catch((error) => {
+      console.log('Error occurred in the process');
       if (error.statusCode) { // managed error
-        res.json({
+        res.status(error.statusCode).json({
           statusCode: error.statusCode,
           message: error.message,
           errors: [error.message],
         });
       } else {
-        res.json({
+        res.status(500).json({
           statusCode: 500,
           message: 'Internal server error',
           errors: ['Unexpected error occurred. Please try again.']
@@ -96,7 +102,7 @@ router.post('/signup', upload.single('file_document'), function (req, res) {
 // error handler for the routes here
 router.use(function (err, req, res, next) {
   if (err) {
-    res.json({
+    res.status(500).json({
       statusCode: 500,
       message: 'Internal Server Error',
       errors: ['Unexpected error occurred. Please try again.']
