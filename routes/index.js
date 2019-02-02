@@ -74,7 +74,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
       return dataService.userMailExists(inputs.email);
     })
     .then((result) => {
-      if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
+      if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 406 };
     })
     .then(() => {
       console.log('Finding an available username');
@@ -93,7 +93,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     })
     .then(() => {
       console.log('NOI User registration successful');
-      res.status(200).json({
+      res.json({
         statusCode: 200,
         message: 'NOI Registration successful.',
         errors: [],
@@ -102,13 +102,13 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     .catch((error) => {
       console.log('Error occurred in the process', error);
       if (error.statusCode) { // managed error
-        res.status(error.statusCode).json({
+        res.json({
           statusCode: error.statusCode,
           message: error.message,
           errors: error.errors ? error.errors : [error.message],
         });
       } else {
-        res.status(500).json({
+        res.json({
           statusCode: 500,
           message: 'Internal server error',
           errors: ['Unexpected error occurred. Please try again.']
@@ -120,7 +120,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
 // error handler for the routes here
 router.use(function (err, req, res, next) {
   if (err) {
-    res.status(500).json({
+    res.json({
       statusCode: 500,
       message: 'Internal Server Error',
       errors: ['Unexpected error occurred. Please try again.']
