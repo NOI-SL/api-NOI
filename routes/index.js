@@ -56,6 +56,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
 
   validators.validateRecaptchaToken(inputs.recaptchaToken)
     .then((valid) => {
+      console.log('captcha response value', valid);
       if(!valid) inputErrors.push('Failed to validate your recaptcha token');
     })
     .then(() => {
