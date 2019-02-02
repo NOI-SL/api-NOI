@@ -27,6 +27,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     documentType: req.body['document_type'],
     documentNumber: req.body['document_number'],
     document: req.file,
+    recaptchaToken: req.body['recaptcha_token'],
   };
 
   const inputErrors = [];
@@ -53,16 +54,23 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
 
   if (!inputs.document) inputErrors.push('Invalid proof document');
 
-  if (inputErrors.length > 0) {
-    res.status(400).json({
-      statusCode: 400,
-      message: 'Invalid input data provided',
-      errors: inputErrors,
-    });
-    return;
-  }
-
-  dataService.userMailExists(inputs.email)
+  validators.validateRecaptchaToken(inputs.recaptchaToken)
+    .then((valid) => {
+      if(!valid) inputErrors.push('Failed to validate your recaptcha token');
+    })
+    .then(() => {
+      if (inputErrors.length > 0) {
+        throw {
+          statusCode: 400,
+          message: 'Invalid input data provided',
+          errors: inputErrors,
+        };
+      }
+    })
+    .then(() => {
+      console.log('Checking email existence');
+      return dataService.userMailExists(inputs.email);
+    })  
     .then((result) => {
       if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
     })
@@ -95,7 +103,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
         res.status(error.statusCode).json({
           statusCode: error.statusCode,
           message: error.message,
-          errors: [error.message],
+          errors: error.errors ? error.errors : [error.message],
         });
       } else {
         res.status(500).json({
