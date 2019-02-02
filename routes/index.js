@@ -15,12 +15,11 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
   let inputs;
   try {
     console.log('Parsing sign up request');
-
     inputs = {
       firstName: req.body['first_name'],
       lastName: req.body['last_name'],
       fullName: req.body['full_name'],
-      dob: new Date(`${req.body['dob_year']}.${req.body['dob_month']}.${req.body['dob_day']}`),
+      dob:`${req.body['dob_year']}-${req.body['dob_month']}-${req.body['dob_day']}`,
       gender: req.body['gender'],
       schoolName: req.body['school_name'],
       address: [
@@ -38,12 +37,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     if (!validators.goodString(inputs.firstName)) inputErrors.push('Invalid First Name');
     if (!validators.goodString(inputs.lastName)) inputErrors.push('Invalid Last Name');
     if (!validators.goodString(inputs.fullName)) inputErrors.push('Invalid Full Name');
-
-    if (!inputs.dob) inputErrors.push('Invalid birthdate');
-    else {
-      const deadline = new Date('1999-07-01');
-      if (inputs.dob < deadline) inputErrors.push('Unfortunately, you are overage to take part in NOI competition');
-    }
+    if (!validators.goodString(inputs.dob)) inputErrors.push('Invalid birthdate');
 
     if (!validators.goodString(inputs.gender)) inputErrors.push('Invalid gender');
     if (!validators.goodString(inputs.schoolName)) inputErrors.push('Invalid school name');
