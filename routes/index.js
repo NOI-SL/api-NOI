@@ -61,20 +61,28 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     });
     return;
   }
+
   dataService.userMailExists(inputs.email)
     .then((result) => {
       if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
     })
     .then(() => {
-      console.log('Creating Moodle user');
-      return moodleService.createMoodleUser(inputs.firstName, inputs.lastName, inputs.email);
+      console.log('Finding an available username');
+      return dataService.createUsername(inputs.firstName, inputs.lastName);
+    })
+    .then((username) => {
+      inputs.username = username;
     })
     .then(() => {
-      console.log('Creating user record');
+      console.log('Storing user data');
       return dataService.createUserRecord(inputs);
     })
     .then(() => {
-      console.log('NOI User registration successful', inputs);
+      console.log('Creating Moodle user');
+      return moodleService.createMoodleUser(inputs.firstName, inputs.lastName, inputs.email, inputs.username);
+    })
+    .then(() => {
+      console.log('NOI User registration successful');
       res.status(200).json({
         statusCode: 200,
         message: 'NOI Registration successful.',
@@ -82,7 +90,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
       });
     })
     .catch((error) => {
-      console.log('Error occurred in the process');
+      console.log('Error occurred in the process', error);
       if (error.statusCode) { // managed error
         res.status(error.statusCode).json({
           statusCode: error.statusCode,

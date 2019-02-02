@@ -1,11 +1,7 @@
 const request = require('request-promise-native');
 
-const createMoodleUser = async function (firstName, lastName, email) {
+const createMoodleUser = async function (firstName, lastName, email, username) {
   try {
-    const ufn = firstName.replace(/[^a-zA-Z:]/g, '').toLowerCase();
-    const lfn = lastName.replace(/[^a-zA-Z:]/g, '').toLowerCase();
-    const username = `${ufn}.${lfn}${parseInt(Math.random() * 100)}`;
-
     const userData = {
       createpassword: 1,
       username,
