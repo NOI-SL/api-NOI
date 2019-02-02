@@ -11,53 +11,60 @@ const dataService = require('../services/data-service');
 
 
 router.post('/signup', upload.single('file_document'), (req, res) => {
-  const inputs = {
-    firstName: req.body['first_name'],
-    lastName: req.body['last_name'],
-    fullName: req.body['full_name'],
-    dob: new Date(`${req.body['dob_year']}.${req.body['dob_month']}.${req.body['dob_day']}`),
-    gender: req.body['gender'],
-    schoolName: req.body['school_name'],
-    address: [
-      req.body['address_1'],
-      req.body['address_2'],
-    ],
-    email: req.body['email'],
-    contactNumber: req.body['contact_number'],
-    documentType: req.body['document_type'],
-    documentNumber: req.body['document_number'],
-    document: req.file,
-    recaptchaToken: req.body['recaptcha_token'],
-  };
-
   const inputErrors = [];
+  let inputs;
+  try {
+    console.log('Parsing sign up request');
 
-  if (!validators.goodString(inputs.firstName)) inputErrors.push('Invalid First Name');
-  if (!validators.goodString(inputs.lastName)) inputErrors.push('Invalid Last Name');
-  if (!validators.goodString(inputs.fullName)) inputErrors.push('Invalid Full Name');
+    inputs = {
+      firstName: req.body['first_name'],
+      lastName: req.body['last_name'],
+      fullName: req.body['full_name'],
+      dob: new Date(`${req.body['dob_year']}.${req.body['dob_month']}.${req.body['dob_day']}`),
+      gender: req.body['gender'],
+      schoolName: req.body['school_name'],
+      address: [
+        req.body['address_1'],
+        req.body['address_2'],
+      ],
+      email: req.body['email'],
+      contactNumber: req.body['contact_number'],
+      documentType: req.body['document_type'],
+      documentNumber: req.body['document_number'],
+      document: req.file,
+      recaptchaToken: req.body['recaptcha_token'],
+    };
 
-  if (!inputs.dob) inputErrors.push('Invalid birthdate');
-  else {
-    const deadline = new Date('1999-07-01');
-    if (inputs.dob < deadline) inputErrors.push('Unfortunately, you are overage to take part in NOI competition');
+    if (!validators.goodString(inputs.firstName)) inputErrors.push('Invalid First Name');
+    if (!validators.goodString(inputs.lastName)) inputErrors.push('Invalid Last Name');
+    if (!validators.goodString(inputs.fullName)) inputErrors.push('Invalid Full Name');
+
+    if (!inputs.dob) inputErrors.push('Invalid birthdate');
+    else {
+      const deadline = new Date('1999-07-01');
+      if (inputs.dob < deadline) inputErrors.push('Unfortunately, you are overage to take part in NOI competition');
+    }
+
+    if (!validators.goodString(inputs.gender)) inputErrors.push('Invalid gender');
+    if (!validators.goodString(inputs.schoolName)) inputErrors.push('Invalid school name');
+    if (!inputs.address.length || !validators.goodString(inputs.address[0])) inputErrors.push('Invalid address');
+    if (!validators.goodString(inputs.email)) inputErrors.push('Invalid email address');
+    if (!validators.goodString(inputs.contactNumber)) inputErrors.push('Invalid contact number');
+    if (!validators.goodString(inputs.documentType)) inputErrors.push('Invalid proof document type');
+    else {
+      if (inputs.documentType !== 'Letter' && !validators.goodString(inputs.documentNumber)) inputErrors.push('Invalid proof document no.');
+    }
+
+    if (!inputs.document) inputErrors.push('Invalid proof document');
+  } catch (error) {
+    console.log('Error while parsing input data', error);
+    throw new Error('Error while parsing input data');
   }
-
-  if (!validators.goodString(inputs.gender)) inputErrors.push('Invalid gender');
-  if (!validators.goodString(inputs.schoolName)) inputErrors.push('Invalid school name');
-  if (!inputs.address.length || !validators.goodString(inputs.address[0])) inputErrors.push('Invalid address');
-  if (!validators.goodString(inputs.email)) inputErrors.push('Invalid email address');
-  if (!validators.goodString(inputs.contactNumber)) inputErrors.push('Invalid contact number');
-  if (!validators.goodString(inputs.documentType)) inputErrors.push('Invalid proof document type');
-  else {
-    if (inputs.documentType !== 'Letter' && !validators.goodString(documentNumber)) inputErrors.push('Invalid proof document no.');
-  }
-
-  if (!inputs.document) inputErrors.push('Invalid proof document');
 
   validators.validateRecaptchaToken(inputs.recaptchaToken)
     .then((valid) => {
       console.log('captcha response value', valid);
-      if(!valid) inputErrors.push('Failed to validate your recaptcha token');
+      if (!valid) inputErrors.push('Failed to validate your recaptcha token');
     })
     .then(() => {
       if (inputErrors.length > 0) {
@@ -71,7 +78,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
     .then(() => {
       console.log('Checking email existence');
       return dataService.userMailExists(inputs.email);
-    })  
+    })
     .then((result) => {
       if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 400 };
     })
