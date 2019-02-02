@@ -11,6 +11,7 @@ const createMoodleUser = async function (firstName, lastName, email, username) {
     };
 
     const requestParams = {
+      rejectUnauthorized: false,
       method: 'POST',
       json: true,
       form: {
