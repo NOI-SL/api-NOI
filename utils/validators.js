@@ -5,13 +5,13 @@ const goodString = function (string) {
 }
 
 const validateRecaptchaToken = async function (token) {
-    const response = await request('https://www.google.com/recaptcha/api/siteverify', {
-        method: 'POST', 
+    const response = JSON.parse(await request('https://www.google.com/recaptcha/api/siteverify', {
+        method: 'POST',
         form: {
             secret: process.env.GOOGLE_RECAPTCHA_SECRET,
             response: token,
         }
-    });
+    }));
     console.log('Recaptcha response', response);
     return response.success;
 }
