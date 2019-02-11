@@ -4,6 +4,7 @@ var cookieParser = require('cookie-parser');
 var cors = require('cors');
 var logger = require('morgan');
 
+var Logger = require('./utils/logger');
 var indexRouter = require('./routes/index');
 
 var app = express();
@@ -25,7 +26,7 @@ app.use(function(err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  console.log('An error occurred', err);
+  Logger.error('An error occurred', err);
 
   // render the error page
   res.status(err.status || 500);

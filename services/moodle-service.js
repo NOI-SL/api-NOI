@@ -1,4 +1,5 @@
 const request = require('request-promise-native');
+const Logger = require('../utils/logger');
 
 const createMoodleUser = async function (firstName, lastName, email, username) {
   try {
@@ -30,7 +31,7 @@ const createMoodleUser = async function (firstName, lastName, email, username) {
       throw new Error(response.message);
     }
   } catch (error) {
-    console.log('Moodle account creation failed', error);
+    Logger.log('Moodle account creation failed', error);
     throw new Error('Moodle user account creation failed');
   }
 }

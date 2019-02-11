@@ -5,16 +5,16 @@ const multer = require('multer');
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 1024 * 1024 * 5 } });
 
+const Logger = require('../utils/logger');
 const validators = require('../utils/validators');
 const moodleService = require('../services/moodle-service');
 const dataService = require('../services/data-service');
-
 
 router.post('/signup', upload.single('file_document'), (req, res) => {
   const inputErrors = [];
   let inputs;
   try {
-    console.log('Parsing sign up request');
+    Logger.log('Parsing sign up request');
     inputs = {
       firstName: req.body['first_name'],
       lastName: req.body['last_name'],
@@ -51,13 +51,13 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
 
     if (!inputs.document) inputErrors.push('Invalid proof document');
   } catch (error) {
-    console.log('Error while parsing input data', error);
+    Logger.log('Error while parsing input data', error);
     throw new Error('Error while parsing input data');
   }
 
   validators.validateRecaptchaToken(inputs.recaptchaToken)
     .then((valid) => {
-      console.log('captcha response value', valid);
+      Logger.log('captcha response value', valid);
       if (!valid) inputErrors.push('Failed to validate your recaptcha token');
     })
     .then(() => {
@@ -70,29 +70,29 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
       }
     })
     .then(() => {
-      console.log('Checking email existence');
+      Logger.log('Checking email existence');
       return dataService.userMailExists(inputs.email);
     })
     .then((result) => {
       if (result) throw { message: 'Email is already on the system. Please log into the NOI portal through portal.noi.lk', statusCode: 406 };
     })
     .then(() => {
-      console.log('Finding an available username');
+      Logger.log('Finding an available username');
       return dataService.createUsername(inputs.firstName, inputs.lastName);
     })
     .then((username) => {
       inputs.username = username;
     })
     .then(() => {
-      console.log('Storing user data');
+      Logger.log('Storing user data');
       return dataService.createUserRecord(inputs);
     })
     .then(() => {
-      console.log('Creating Moodle user');
+      Logger.log('Creating Moodle user');
       return moodleService.createMoodleUser(inputs.firstName, inputs.lastName, inputs.email, inputs.username);
     })
     .then(() => {
-      console.log('NOI User registration successful');
+      Logger.log('NOI User registration successful');
       res.json({
         statusCode: 200,
         message: 'NOI Registration successful.',
@@ -100,7 +100,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
       });
     })
     .catch((error) => {
-      console.log('Error occurred in the process', error);
+      Logger.log('Error occurred in the process', error);
       if (error.statusCode) { // managed error
         res.json({
           statusCode: error.statusCode,
