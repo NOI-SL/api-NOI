@@ -60,23 +60,24 @@ const getUserProfile = async function (username) {
       throw new Error(response.message);
     }
 
-    if(!response.users.length) {
-      throw new Error('User does not exist');
+    if (!response.users.length) {
+      throw new Error('User does not exist!');
     }
 
     return response.users[0];
   } catch (error) {
-    console.log('Moodle action failed', error);
-    throw new Error('Moodle action failed');
+    Logger.error(error);
+    throw new Error('Failed to get user profile from moodle');
   }
 }
 
-const enrollUsers = async function(usernames, courseId) {
-  for(let username of usernames){
+const enrollUsers = async function (usernames, courseId) {
+  for (let username of usernames) {
     try {
       await enrollUser(username, courseId);
-    } catch(error){
-      console.log("Could not enroll user ", {username, error});
+      Logger.log('Enrolled user', { username });
+    } catch (error) {
+      Logger.error("Could not enroll user ", { username, error });
     }
   }
 }
@@ -112,8 +113,8 @@ const enrollUser = async function (username, courseId) {
 
     return userId;
   } catch (error) {
-    console.log('Moodle action failed', error);
-    throw new Error('Moodle action failed');
+    Logger.error(error);
+    throw new Error('Failed to enroll user on moodle');
   }
 }
 
