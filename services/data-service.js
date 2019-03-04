@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const Logger = require('../utils/logger');
 const serviceAccount = require('../firebase-key');
 
 admin.initializeApp({
@@ -35,10 +36,10 @@ const userMailExists = async function (email) {
 }
 
 const createUserRecord = async function (inputs) {
-    console.log('Uploading document');
+    Logger.log('Uploading document');
     const documentUrl = await uploadDocument(inputs.document.path, `${inputs.email}/${inputs.document.originalname}`);
 
-    console.log('Inserting user records into firestore');
+    Logger.log('Inserting user records into firestore');
     const userRecord = {
         username: inputs.username,
         firstName: inputs.firstName,
@@ -53,10 +54,11 @@ const createUserRecord = async function (inputs) {
         documentType: inputs.documentType,
         documentNumber: inputs.documentNumber,
         documentUrl: documentUrl,
+        createdAt: Date.now(),
     };
     const usersRef = admin.firestore().collection('users');
     await usersRef.doc(inputs.email).set(userRecord);
-    console.log('User record', userRecord);
+    Logger.log('User record', userRecord);
 }
 
 const uploadDocument = async function (localPath, remotePath) {

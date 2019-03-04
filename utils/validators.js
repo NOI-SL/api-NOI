@@ -1,4 +1,5 @@
 const request = require('request-promise-native');
+const Logger = require('./logger');
 
 const goodString = function (string) {
     return (typeof string === 'string' && string.trim().length > 0);
@@ -12,7 +13,7 @@ const validateRecaptchaToken = async function (token) {
             response: token,
         }
     }));
-    console.log('Recaptcha response', response);
+    Logger.log('Recaptcha response', response);
     return response.success;
 }
 
