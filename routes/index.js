@@ -10,7 +10,14 @@ const validators = require('../utils/validators');
 const moodleService = require('../services/moodle-service');
 const dataService = require('../services/data-service');
 
+
 router.post('/signup', upload.single('file_document'), (req, res) => {
+  return res.json({
+    statusCode: 400,
+    message: 'NOI registrations closed',
+    errors: ['NOI registrations are closed. You cannot register for NOI 2019 anymore.']
+  });
+
   const inputErrors = [];
   let inputs;
   try {
@@ -19,7 +26,7 @@ router.post('/signup', upload.single('file_document'), (req, res) => {
       firstName: req.body['first_name'],
       lastName: req.body['last_name'],
       fullName: req.body['full_name'],
-      dob:`${req.body['dob_year']}-${req.body['dob_month']}-${req.body['dob_day']}`,
+      dob: `${req.body['dob_year']}-${req.body['dob_month']}-${req.body['dob_day']}`,
       gender: req.body['gender'],
       schoolName: req.body['school_name'],
       address: [
